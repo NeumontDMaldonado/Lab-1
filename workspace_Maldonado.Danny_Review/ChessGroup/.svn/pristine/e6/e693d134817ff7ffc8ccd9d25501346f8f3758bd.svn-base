@@ -1,0 +1,673 @@
+package module1;
+
+import java.awt.Image;
+import java.io.BufferedReader;
+import java.io.BufferedWriter;
+import java.io.File;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Scanner;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import javax.imageio.ImageIO;
+import javax.swing.JPanel;
+import module2.ChessBoard;
+//import module5.ChessController;
+
+public class ChessIO extends JPanel {
+
+	private static final long serialVersionUID = -4402096070631047641L;
+	/* 
+	 * Regex check for either a piece starting command, piece moving command, or a castling move.
+	 * The regex string for each is made then compiled into a pattern.
+	 */
+	private static final String pieceSelect = "[a-h][1-8]";
+	private static final String start = "([prnbqk][dl][a-h][1278]){1}";
+	private static final String move = "([a-h][1-8]) ([a-h][1-8])(\\*)?";
+	private static final String pieceType = "([prnbqk])";
+	private static final String pieceColor = "[dl]";
+	private static final String colChar = "[a-h]";
+	private static final String placingRow = "[1278]";	
+	private	static final String rowNum = "[1-8]";
+	private static String imgFile;
+	private static int playerTurn = 0;
+	static ChessPieces container = new ChessPieces();
+	ChessPiece piece;
+	private String f;
+
+	/**
+	 * Will execute until a valid file is entered, then returned to main.
+	 * @param args - the filename in the command line.
+	 * @return - the valid filename will be returned to the buffered reader in the main for execution.
+	 */
+	public File getFileName(String args) {
+		f = args;
+		File file = new File(f);
+		Boolean fileExists = false;
+
+		// Loop until the correct file is entered.
+		while(!fileExists) {
+			file = new File(f);
+
+			// Checks if file exists
+			if(file.exists()) {
+				fileExists = true;
+			}
+			else {
+				System.out.println("Please enter the correct filename:");
+				Scanner fileScan = new Scanner(System.in);
+				f = fileScan.nextLine();
+				fileScan.close();
+			}
+		}
+		return file;
+	}
+
+	/**
+	 * Creates the chess board 
+	 * @param board - the board being passed in is not yet filled.
+	 * @return - a board that has the panels of white and brown tiles.
+	 */
+	public ChessBoard createBoard(ChessBoard board) {
+		// Tries to find the images for the titles of the board.
+		try {
+			Image blackBlock = ImageIO.read(new File("chessPieces/dblock.jpg"));
+			Image whiteBlock = ImageIO.read(new File("chessPieces/wblock.jpg"));
+
+			// Creates a new board.
+			board = new ChessBoard(whiteBlock,blackBlock);
+
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+		return board;
+	}
+
+	/**
+	 * This will determine if the line being read in is to place or move a piece.
+	 * The line is compared against a fixed regex line to determine which it is.
+	 * @param reader
+	 * @param board
+	 */
+	public void determineCommand(BufferedReader reader, ChessBoard board) {
+		boolean continueRead = true;	
+				
+		// Loop will execute until all of the lines have been read in by reader. 
+		try {
+			String currentIOLine = "";
+
+			while(reader.ready()) {	
+				for(int i = 0; i < 32; i++) {
+					currentIOLine = reader.readLine();
+
+					if (currentIOLine.matches(start)) {
+						Thread.sleep(50);
+						placePieces(currentIOLine, board);
+					}	
+				}
+
+				while (continueRead) {
+					boolean isPiece = false;
+					
+					if (isKingInCheck(board))
+						System.err.println("The king is in check (start of turn).");					
+					
+					System.out.println();
+					System.out.println("Please enter a piece location to see it's available move(s).");
+					Scanner pieceScanner = new Scanner(System.in);
+					String pieceLoc = pieceScanner.nextLine();					
+					ChessPiece tempPiece = getPieceByLoc(pieceLoc);
+					
+					while (!isPiece) {
+						if (tempPiece == null) {
+							System.err.println("No piece there!");
+							System.out.println();
+							System.out.println("Please enter a piece location to find it's available move(s).");
+							Scanner newPieceScanner = new Scanner(System.in);
+							String newPieceLoc = pieceScanner.nextLine();					
+							ChessPiece newTempPiece = getPieceByLoc(newPieceLoc);
+							tempPiece = newTempPiece;
+						}
+						else {
+							isPiece = true;
+						}
+					}
+					
+					System.out.println("You have selected the " + tempPiece.getColor() + " " + tempPiece.getName());
+					
+					if (listAvailableMoves(tempPiece, board, playerTurn).isEmpty())
+						System.err.println("The piece cannot move or it's not that player's turn.");
+										
+					else {						
+						System.out.println("Available moves: " + listAvailableMoves(tempPiece, board, playerTurn).toString());						
+						
+						writeMove(tempPiece, tempPiece.getAvailableMoves());
+						currentIOLine = reader.readLine();
+							
+						if (currentIOLine.matches(move)) {
+							Thread.sleep(200);
+							movePieceCommand(currentIOLine, board);
+							
+							if (isKingInCheck(board))
+								System.err.println("The king is now in CHECK (end of turn).");
+						}
+						
+												
+						if(!currentIOLine.matches(start) && !currentIOLine.matches(move) && !currentIOLine.matches(pieceSelect))
+							System.err.println("Invalid line!");
+							
+						if(currentIOLine.equals("end"))
+							continueRead = false;
+						
+					}
+				}
+			}
+
+			System.err.println("GAME OVARIES");
+
+		} catch (NumberFormatException e) {
+			e.printStackTrace();
+		} catch (IOException e) {
+			e.printStackTrace();
+		} catch (InterruptedException e) {
+			e.printStackTrace();
+		}
+
+		// Closes the reader to prevent memory leak.
+		try {
+			reader.close();
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+
+	}	
+
+
+
+	
+	
+
+	/**
+	 *  Will read in the piece type, color, and row/column and place a piece at that location.
+	 * @param currentIOLine - 
+	 * @param board - 
+	 */
+	private void placePieces(String currentIOLine, ChessBoard board) {
+		String splitAt = currentIOLine.substring(2);
+		String type, color, column, pieceLocation;
+		int row;
+
+		// variables for each character in the input line.
+		type = findChar(pieceType, currentIOLine);
+		color = findChar(pieceColor, currentIOLine);
+		column = findChar(colChar, splitAt);
+		row = Integer.parseInt(findChar(placingRow, currentIOLine));
+		pieceLocation = column + row;
+
+		piece = new ChessPiece(type, color, pieceLocation, null, null);		
+
+		imgFile = ("chessPieces/" + piece.getColor() + piece.getName() + ".png");
+		piece.setImageIcon(imgFile);
+
+		container.addPieceToContainer(piece);
+
+		// Adds the pieces to the board and creates a piece object.
+		board.drawPieceIcon(piece.getImageIcon(), piece.getLocation());
+
+		// The placement will then be recored so we can see where each piece starts.
+		System.out.println("The " + piece.getColor() + " " + piece.getName() + 
+				" was placed at " + piece.getLocation());
+	}
+
+
+	/**
+	 *  Checks if the input line is a moving command. 
+	 *  Each component of the line read in will be stored as a variable.
+	 *  There is a starting row and column, as well as ending row and column variable. 
+	 *  For example, "e2 e4" will be broken up into the parts e, 2, e, 4. This way they can each be easily accessed.
+	 * @param currentMoveLine - the current line being read in.
+	 * @param board - the current board being played on.
+	 */
+	private void movePieceCommand(String currentMoveLine, ChessBoard board) {
+		String [] splitAt = currentMoveLine.split(" "); // splits the input line at every space (between locations).			
+		String startCol, endCol, startLoc, endLoc;
+		int startRow, endRow;
+
+		// Variables for each character in the input line (the start and end location) are set to the return of the findChar method.
+		startCol = findChar(colChar, splitAt[0]);
+		startRow = Integer.parseInt(findChar(rowNum, splitAt[0]));
+		endCol = findChar(colChar, splitAt[1]);
+		endRow = Integer.parseInt(findChar(rowNum, splitAt[1]));
+		startLoc = startCol + startRow;
+		endLoc = endCol + endRow;
+		
+		board.movePiece(startLoc, endLoc, container);
+
+		playerTurn++;
+
+	}
+
+
+	/**
+	 * Checks each type of piece for if its move is legal for its type.
+	 * @param container - has all of the pieces to compare against.
+	 * @param startLoc - the piece's starting location
+	 * @param desiredCol - the piece's desired column to move to.
+	 * @param desiredRow - the piece's desired row to move to.
+	 * @return - boolean
+	 */
+	private boolean isLegalMove(int turn, ChessBoard board, ChessPiece currentPiece, String startLoc, String desiredCol, Integer desiredRow) {
+		String desiredLoc = desiredCol + desiredRow;
+		boolean isLegal = true;
+		
+		if (currentPiece.getLocation().equals(startLoc) && currentPiece.getName().equalsIgnoreCase("Pawn")) {					
+
+			switch(currentPiece.getColor()) {
+			case "white":
+				if (turn % 2 == 0) {
+					if ((currentPiece.getPieceRow() == 2 && desiredCol.equals(currentPiece.getPieceCol()) && desiredRow.equals(currentPiece.getPieceRow() + 2) ||
+							desiredCol.equals(currentPiece.getPieceCol()) && desiredRow.equals(currentPiece.getPieceRow() + 1)) ) 
+						if (!isPieceAtLoc(container, desiredLoc))
+							return isLegal;
+
+					if ((colAsInt(desiredCol).equals(currentPiece.getColAsInt() + 1) || colAsInt(desiredCol).equals(currentPiece.getColAsInt() - 1)) && desiredRow.equals(currentPiece.getPieceRow() + 1))
+						if(isPieceAtLoc(container, desiredLoc) && isPieceAtEndLocIsOpColor(currentPiece, container, desiredLoc))
+							return isLegal;
+
+					if (isPieceAtLoc(container, desiredLoc) && desiredCol.equals(currentPiece.getPieceCol()) && desiredRow.equals(currentPiece.getPieceRow() + 1))
+						isLegal = false;
+
+					else {
+						//System.err.println("Not a valid move!");
+						isLegal = false;
+					}
+				}
+
+				else{
+					//System.err.println("Not that player's turn!");
+					isLegal = false;
+				}
+
+				break;
+
+			case "black":
+				if (turn % 2 != 0) {
+					if ((currentPiece.getPieceRow() == 7 && desiredCol.equals(currentPiece.getPieceCol()) && desiredRow.equals(currentPiece.getPieceRow() - 2) ||
+							desiredCol.equals(currentPiece.getPieceCol()) && desiredRow.equals(currentPiece.getPieceRow() - 1)) && playerTurn % 2 != 0 ) 
+						if (!isPieceAtLoc(container, desiredLoc))
+							return isLegal;
+
+					if ((colAsInt(desiredCol).equals(currentPiece.getColAsInt() + 1) || colAsInt(desiredCol).equals(currentPiece.getColAsInt() - 1)) && desiredRow.equals(currentPiece.getPieceRow() - 1))
+						if(isPieceAtLoc(container, desiredLoc) && isPieceAtEndLocIsOpColor(currentPiece, container, desiredLoc))
+							return isLegal;
+
+					if (isPieceAtLoc(container, desiredLoc) && desiredCol.equals(currentPiece.getPieceCol()) && desiredRow.equals(currentPiece.getPieceRow() - 1))
+						isLegal = false;
+
+					else {
+						//System.err.println("Not a valid move!");
+						isLegal = false;
+					}
+				}
+
+				else {
+					//System.err.println("Not that player's turn!");
+					isLegal = false;
+				}
+
+				break;
+			}
+		}	
+
+		if (currentPiece.getLocation().equals(startLoc) && currentPiece.getName().equalsIgnoreCase("Rook")) {
+			if ((turn % 2 == 0 && currentPiece.getColor().equals("white")) ||	(turn % 2 == 1 && currentPiece.getColor().equals("black")) ) {
+				if ((desiredCol.equals(currentPiece.getPieceCol()) && desiredRow < 9) || (desiredRow.equals(currentPiece.getPieceRow()) && colAsInt(desiredCol) < 9) ) 
+
+					return isLegal;
+								
+				else {
+					//System.err.println("Not a valid move");
+					isLegal = false;
+				}
+			}
+			else {
+				//System.err.println("Not that player's turn");
+				isLegal = false;
+			}
+
+		}
+
+		if (currentPiece.getLocation().equals(startLoc) && currentPiece.getName().equalsIgnoreCase("Knight")) {
+			if ((turn % 2 == 0 && currentPiece.getColor().equals("white")) ||	(turn % 2 == 1 && currentPiece.getColor().equals("black")) ) {
+				if ((colAsInt(desiredCol).equals(currentPiece.getColAsInt() + 2) && (desiredRow.equals(currentPiece.getPieceRow() + 1) || desiredRow.equals(currentPiece.getPieceRow() - 1))) || 
+						(colAsInt(desiredCol).equals(currentPiece.getColAsInt() + 1) && (desiredRow.equals(currentPiece.getPieceRow() + 2) || desiredRow.equals(currentPiece.getPieceRow() - 2))) ||
+						(colAsInt(desiredCol).equals(currentPiece.getColAsInt() - 2) && (desiredRow.equals(currentPiece.getPieceRow() + 1) || desiredRow.equals(currentPiece.getPieceRow() - 1))) ||
+						(colAsInt(desiredCol).equals(currentPiece.getColAsInt() - 1) && (desiredRow.equals(currentPiece.getPieceRow() + 2) || desiredRow.equals(currentPiece.getPieceRow() - 2))) ) 
+
+					return isLegal;
+				else {
+					//System.err.println("Not a valid move.");
+					isLegal = false;
+				}
+			}
+			else {
+				//System.err.println("Not that player's turn.");
+				isLegal = false;
+			}
+
+		}
+
+		if (currentPiece.getLocation().equals(startLoc) && currentPiece.getName().equalsIgnoreCase("Bishop")) {
+			if ((turn % 2 == 0 && currentPiece.getColor().equals("white")) ||	(turn % 2 == 1 && currentPiece.getColor().equals("black")) ) {
+				if ((colAsInt(desiredCol) - currentPiece.getColAsInt()        == desiredRow - currentPiece.getPieceRow()) || 
+					((colAsInt(desiredCol) - currentPiece.getColAsInt()) * -1 == desiredRow - currentPiece.getPieceRow()) ||
+					(colAsInt(desiredCol) - currentPiece.getColAsInt()        ==(desiredRow - currentPiece.getPieceRow()) * -1) ) 
+					
+					return isLegal;
+					
+				else {
+					//System.err.println("Not a valid move..");
+					isLegal = false;
+				}
+			}
+
+			else {
+				//System.err.println("Not that player's turn..");
+				isLegal = false;
+			}
+
+		}
+
+		if (currentPiece.getLocation().equals(startLoc) && currentPiece.getName().equalsIgnoreCase("Queen")) {
+			if ((turn % 2 == 0 && currentPiece.getColor().equals("white")) ||	(turn % 2 == 1 && currentPiece.getColor().equals("black"))) {
+				if ( desiredCol.equals(currentPiece.getPieceCol()) || (desiredRow.equals(currentPiece.getPieceRow())) ||
+					(colAsInt(desiredCol) - currentPiece.getColAsInt()        == desiredRow - currentPiece.getPieceRow()) || 
+					((colAsInt(desiredCol) - currentPiece.getColAsInt()) * -1 == desiredRow - currentPiece.getPieceRow()) ||
+					(colAsInt(desiredCol) - currentPiece.getColAsInt()        ==(desiredRow - currentPiece.getPieceRow()) * -1) ) 					
+						
+					return isLegal;
+
+					else {
+						//System.err.println("Not a valid move...");
+						isLegal = false;
+					}
+			}
+			else {
+				//System.err.println("Not that player's turn...");
+				isLegal = false;
+			}
+		}
+
+		if (currentPiece.getLocation().equals(startLoc) && currentPiece.getName().equalsIgnoreCase("King")) {
+			if ((turn % 2 == 0 && currentPiece.getColor().equals("white")) ||	(turn % 2 == 1 && currentPiece.getColor().equals("black"))) {
+				if (desiredCol.equals(currentPiece.getPieceCol()) && (desiredRow.equals(currentPiece.getPieceRow() + 1) || desiredRow.equals(currentPiece.getPieceRow() - 1)) ||
+					((colAsInt(desiredCol) == currentPiece.getColAsInt() + 1 || colAsInt(desiredCol) == currentPiece.getColAsInt() - 1) && desiredRow == currentPiece.getPieceRow()) ||
+					(colAsInt(desiredCol) == currentPiece.getColAsInt() + 1 && (desiredRow == currentPiece.getPieceRow() + 1 || desiredRow == currentPiece.getPieceRow() - 1)) ||
+					(colAsInt(desiredCol) == currentPiece.getColAsInt() - 1 && (desiredRow == currentPiece.getPieceRow() + 1 || desiredRow == currentPiece.getPieceRow() - 1)) ) 
+
+					return isLegal;
+
+				else {
+					//System.err.println("Not a valid move....");
+					isLegal = false;
+				}
+			}
+			else {
+				//System.err.println("Not that player's turn....");
+				isLegal = false;
+			}
+		}
+
+		return isLegal;
+
+	}
+	
+	private boolean isKingInCheck(ChessBoard board) {
+		boolean kingIsInCheck = false;
+		
+		for (int i = 0; i < container.getLength(); i++) {
+			ChessPiece currentPiece = container.getPiece(i);
+			
+			//System.out.println(currentPiece.getName() + " available moves: " + listAvailableMoves(currentPiece, board, playerTurn));
+
+			if (playerTurn % 2 == 0) {
+				int turn = 1;
+				if (currentPiece.getColor().equals("black") && listAvailableMoves(currentPiece, board, turn).contains(getPieceByNameAndColor("King", "white").getLocation())) {
+					//System.out.println(currentPiece.getName() + " available moves: " + listAvailableMoves(currentPiece, board, turn));
+					kingIsInCheck = true;
+				}	
+			}
+			
+			if (playerTurn % 2 == 1) {
+				int turn = 2;
+				if (currentPiece.getColor().equals("white") && listAvailableMoves(currentPiece, board, turn).contains(getPieceByNameAndColor("King", "black").getLocation())) {
+					//System.out.println(currentPiece.getName() + " available moves: " + listAvailableMoves(currentPiece, board, turn));
+					kingIsInCheck = true;
+				}
+			}
+		}
+
+		return kingIsInCheck;
+	}
+
+	/**
+	 * Lists the available moves for a given piece.
+	 * @param currentPiece - the piece that we are getting moves for
+	 * @param board - holds all the tiles on the board.
+	 */
+	public ArrayList listAvailableMoves(ChessPiece currentPiece, ChessBoard board, int turn) {
+		currentPiece.removeAvailableMoves();
+		
+		for (int c = 1; c < 9; c++) {
+			for (int r = 1; r < 9; r++) {
+				char checkCol = (char) (96 + c);
+				String desiredCol = String.valueOf(checkCol);
+				String desiredLoc = desiredCol + String.valueOf(r);
+				
+				if ((!pieceOnSquare(board, checkCol, r) || isPieceAtEndLocIsOpColor(currentPiece, container, desiredLoc)) 
+						&& isLegalMove(turn, board, currentPiece, currentPiece.getLocation(), desiredCol, r)) {
+					
+					if (!isPieceMoveBlocked(currentPiece, board, currentPiece.getPieceCol(), currentPiece.getPieceRow(), desiredCol, r))
+						currentPiece.addAvailableMove(desiredLoc);
+				}
+				
+			}
+		}
+		//System.out.println("Its available moves are: " + currentPiece.getAvailableMoves().toString());
+		return currentPiece.getAvailableMoves();
+	}
+
+	/**
+	 * Check to see if the movement for a piece is blocked
+	 * @param board - contains the pieces of the board
+	 * @param startColumn - the starting column of the piece being moved
+	 * @param startRow - the starting row of the piece being moved
+	 * @param destColumn - the ending column of the piece being moved
+	 * @param destRow - the ending row of the piece being moved.
+	 * @return - true if the piece's move is blocked.
+	 */
+	boolean isPieceMoveBlocked(ChessPiece currentPiece, ChessBoard board, String startColumn, int startRow, String destColumn, int destRow) {
+		int startCol = colAsInt(startColumn);
+		int checkSpots = 0;
+		int dirX;
+		int dirY;
+
+		int destCol = colAsInt(destColumn);
+
+		if (destCol == startCol)
+			dirX = 0;
+		else
+			dirX = destCol > startCol ? 1 : -1;
+
+		if(destRow == startRow)
+			dirY = 0;
+		else
+			dirY = destRow > startRow ? 1 : -1;
+
+
+		if (dirY == 0) 
+			checkSpots = Math.abs(destCol - startCol) - 1;
+		if (dirX == 0)
+			checkSpots = Math.abs(destRow - startRow) - 1;
+		else
+			checkSpots = Math.abs(destCol - startCol) - 1;
+	
+		for (int i = 1, j = 0; j < checkSpots; i++, j++) {
+			char checkCol = (char) (96 + startCol + i * dirX);
+			int checkRow = startRow + i * dirY;
+
+			if (pieceOnSquare(board, checkCol, checkRow)) {
+				return true;
+			}
+		}
+		return false;
+	}
+	
+
+	/**
+	 * checks if there is a piece on a given piece of the board.
+	 * @param board - the container of board pieces
+	 * @param checkColumn - the column to be checked.
+	 * @param row - the row to be checked
+	 * @return - true if the square has a piece on it.
+	 */
+	private boolean pieceOnSquare(ChessBoard board, char checkColumn, int row) {
+		boolean isPieceAtLoc = false;
+		String column = Character.toString(checkColumn);
+		String checkLoc = column + row;
+
+		for(int i = 0; i < board.jLabels.length; i++) {
+			if(board.jLabels[i].getName().equals(checkLoc) && board.jLabels[i].getIcon() != null) {
+				isPieceAtLoc = true;
+			}
+		}		
+		return isPieceAtLoc;
+	}
+
+
+	/**
+	 * Converts the column to an int to be compared against.
+	 * @param desiredCol - the column that the piece is trying to move to
+	 * @return - the column as an int
+	 */
+	public Integer colAsInt(String desiredCol) {
+		return (int)desiredCol.charAt(0) - 96;
+	}
+
+	/**
+	 * Checks if there is a piece at the end location
+	 * @param container - array of pieces (for their locations)
+	 * @param desiredLoc - the location the piece is trying to get to.
+	 * @return - true if a piece is at the given location.
+	 */
+	private boolean isPieceAtLoc(ChessPieces container, String desiredLoc) {
+		boolean isPieceAtLoc = false;
+
+		for(int i = 0; i < container.getLength(); i++) {
+			ChessPiece temp = container.getPiece(i);
+
+			if(temp.getLocation().equals(desiredLoc)) {
+				isPieceAtLoc = true;
+			}
+		}		
+		return isPieceAtLoc;
+	}
+	
+
+	/**
+	 * Gets a piece at a given location
+	 * @param loc - the place on the board we are checking.
+	 * @return piece
+	 */
+	private ChessPiece getPieceByLoc(String loc) {
+		ChessPiece piece = null;
+		for (int i = 0; i < container.getLength(); i++) {
+			if(container.getPiece(i).getLocation().equals(loc))
+				piece = container.getPiece(i);
+		}
+		return piece;
+	}
+
+	private ChessPiece getPieceByNameAndColor(String name, String color) {
+		ChessPiece piece = null;
+		for (int i = 0; i < container.getLength(); i++) {
+			if(container.getPiece(i).getName().equals(name) && container.getPiece(i).getColor().equals(color))
+				piece = container.getPiece(i);
+		}
+		return piece;
+	}
+
+	/**
+	 * Checks if the piece at the ending location is of opposite color.
+	 * @param piece - the piece being moved.
+	 * @param container - the container of chess pieces
+	 * @param endLoc - the location the piece is being moved to.
+	 * @return - true if the piece at the end location is of opposite color.
+	 */
+	public boolean isPieceAtEndLocIsOpColor(ChessPiece piece, ChessPieces container, String endLoc) {
+		boolean pieceAtEndLocIsOpColor = false;
+
+		for(int i = 0; i < container.getLength(); i++) {
+			if (container.getPiece(i).getLocation().equals(endLoc) && container.getPiece(i).getColor() != piece.getColor())
+				pieceAtEndLocIsOpColor = true;
+		}
+
+		return pieceAtEndLocIsOpColor;
+	}
+
+
+	/**
+	 * Finds the character that matches the char in the regex string and that is in the line being read in.
+	 * @param reg - the regex string that the line will be compared against.
+	 * @param line - the line being read in.
+	 * @return info - the String of what matched in reg and line.
+	 */
+	public static String findChar(String reg, String line) {
+		Pattern pattern = Pattern.compile(reg);
+		Matcher matcher1 = pattern.matcher(line);		
+		String info = null;
+
+		matcher1.find();
+		info = matcher1.group();		
+
+		return info;
+	}
+
+	 /** 
+	 * Writes the object/items to their designated file.
+	 * @param tempPiece - used to compare the move command against its loc.
+	 * @param availableMoves - the list of available moves for the tempPiece
+	 * @throws IOException
+	 */
+	public void writeMove(ChessPiece tempPiece, ArrayList<String> availableMoves) throws IOException{
+		BufferedWriter write = new BufferedWriter(new FileWriter(f, true));
+		boolean legitMove = false;
+		Scanner wordScanner;
+		
+		while(!legitMove) {
+			System.out.println("Enter the piece location again and one of its available moves. (a2 a4)");
+			wordScanner = new Scanner(System.in);
+			String move = wordScanner.nextLine();
+			String endLoc = null;
+						
+			if(availableMoves.contains(move.substring(3))) {
+				for (int i = 0; i < availableMoves.size(); i++) {
+					if (availableMoves.get(i).equals(move.substring(3)))
+						endLoc = availableMoves.get(i);
+				}
+				
+				if (move.equals(tempPiece.getLocation() + " " + endLoc)) {
+					write.write(move);
+					write.newLine();
+					write.close();
+					legitMove = true;
+				}
+			}
+			else
+				System.err.println("Not an available move bright one.");
+			
+			//wordScanner.close();
+		}
+	}
+}

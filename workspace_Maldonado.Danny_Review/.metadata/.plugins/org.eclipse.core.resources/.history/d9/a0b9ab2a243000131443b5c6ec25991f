@@ -1,0 +1,29 @@
+package secondDay;
+
+public class Main 
+{
+	public void doSomething() 
+	{
+		
+	}
+	
+	public void doSomethingElse() 
+	{
+		
+	}
+	
+	public void doSomethingAgain() 
+	{
+		
+	}
+
+	/**
+	 * @param args
+	 */
+	public static void main(String[] args) 
+	{
+		Main.d
+
+	}
+
+}

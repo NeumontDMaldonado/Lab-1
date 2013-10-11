@@ -1,0 +1,187 @@
+package module1;
+
+import java.io.BufferedReader;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.IOException;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+public class InformationReader 
+{
+
+	/**
+	 * constructor
+	 * @param args
+	 * @throws IOException
+	 */
+	public InformationReader(String args) throws IOException
+	{
+		FileReader chessNotationFile = null;
+		try 
+		{
+			chessNotationFile = new FileReader(args);
+		} 
+		catch (FileNotFoundException e) 
+		{
+			System.err.println("No file found");
+		}
+		BufferedReader buff = new BufferedReader(chessNotationFile);
+		read(buff);
+	}
+
+	static final String PIECEPLACEMENT = "\\b([a-z])([ld])([a-h][1-8])\\b";
+	static final String PIECEMOVEMENT = "\\b([a-h][1-8])[ ]([a-h][1-8])([*]?)\\b";
+	static final String SPECIALPIECEMOVEMENT = "\\b([a-h1-8]{2})[ ]([a-h1-8]{2})[ ]([a-h1-8]{2})[ ]([a-h1-8]{2})\\b";
+	static final String EMPTY = "";
+
+	/**
+	 * @param buff
+	 * @throws IOException
+	 */
+	public void read(BufferedReader buff) throws IOException
+	{
+		String line = EMPTY; //line represents the line in the file the buffered reader is currently reading 
+
+		while(buff.ready())
+		{
+			line = buff.readLine();
+			Pattern pattern1 = Pattern.compile(PIECEPLACEMENT);
+			Pattern pattern2 = Pattern.compile(PIECEMOVEMENT);
+			Pattern pattern3 = Pattern.compile(SPECIALPIECEMOVEMENT);
+			Matcher matcher1 = pattern1.matcher(line);
+			Matcher matcher2 = pattern2.matcher(line);
+			Matcher matcher3 = pattern3.matcher(line);
+
+			//what piece being placed and where
+			if(matcher1.find())
+				System.out.println(findColor(matcher1.group(2)) + " " + piece(matcher1.group(1)) + " is bing placed at " + findLocation(matcher1.group(3)));
+
+			//Moving two pieces e.g. castling
+			else if(matcher3.find())
+			{
+				castling(line);
+				System.out.println("Move " + findLocation(matcher3.group(1)) + " to " + findLocation(matcher3.group(2)) + " and move " + findLocation(matcher3.group(3)) 
+						+ " to " + findLocation(matcher3.group(4)));
+			}
+
+			//Moving one piece from one location to another
+			else if(matcher2.find())
+			{
+				if(matcher2.group(3).equals(EMPTY))
+					System.out.println("Move " + findLocation(matcher2.group(1)) + " to " + findLocation(matcher2.group(2)));
+				else
+					System.out.println("Move " + findLocation(matcher2.group(1)) + " to capture " + findLocation(matcher2.group(2)));
+			}
+
+			else
+			{
+				System.err.println("Invalid entry");
+			}
+
+		}
+		buff.close();
+	}
+	static final String ROOK = "r", KNIGHT = "n", KING = "k", BISHOP = "b", PAWN = "p", QUEEN = "q";
+	static final String ROOKPIECE = "rook", KNIGHTPIECE = "knight", KINGPIECE = "king", BISHOPPIECE = "bishop", PAWNPIECE = "pawn", QUEENPIECE = "queen";
+
+	/**
+	 * find out what piece the chess notation is referring to
+	 * @param match1
+	 * @return a string representation of the chess piece
+	 */
+	public String piece(String match)
+	{
+		String match1;
+		String piece = null;
+		match1 = match;
+
+		//finds what piece the chess notation is refering to using the regex group given to it.
+		if(match1.equals(ROOK))
+			piece = ROOKPIECE;
+
+		else if(match1.equals(KNIGHT))
+			piece = KNIGHTPIECE;
+
+		else if(match1.equals(KING))
+			piece = KINGPIECE;
+
+		else if(match1.equals(BISHOP))
+			piece = BISHOPPIECE;
+
+		else if(match1.equals(PAWN))
+			piece = PAWNPIECE;
+
+		else if(match1.equals(QUEEN))
+			piece = QUEENPIECE;
+
+
+		return piece;
+	}
+
+
+	/**
+	 * finds the location of a piece based on the location. Note, the location may be the start or end location
+	 * @param coordinates
+	 * @return a string representation of the board location
+	 */
+	public String findLocation(String coordinates)
+	{
+		String location = coordinates;
+		return location;
+	}
+
+	/**
+	 * finds what color the piece is based on the chess notation
+	 * @param color as chess piece color
+	 * @return a string representation of the color
+	 */
+	public String findColor(String fileRepColor)
+	{
+		String color = null;
+		String white = "l", black = "d";
+		if(fileRepColor.equals(white))
+			color = "White";
+
+		if(fileRepColor.equals(black))
+			color = "Black";
+
+		return color;
+	}
+	
+static final String CASTLING = "\\b([a-h])[1-8][ ]([a-h])[1-8][ ][a-h1-8]{2}[ ][a-h1-8]{2}\\b";
+	
+	/**
+	 * This method figures out if the castling is queenside or kingside
+	 * @param token
+	 */
+	public void castling(String token)
+	{
+		Pattern pattern = Pattern.compile(CASTLING);
+		Matcher match = pattern.matcher(token);
+		int queenside = -2, kingside = -1;
+		if(match.find())
+		{
+			int value = match.group(1).charAt(0) - match.group(2).charAt(0);
+			System.out.println(value);
+
+			if(value == kingside)
+			{
+				System.out.println("King side castling");
+			}
+
+			else if(value == queenside)
+			{
+				System.out.println("Queen side castling");
+			}
+		}
+	}
+
+	/**
+	 * The message that is printed out when the file ends
+	 */
+	public void end()
+	{
+		System.out.println("There is no more information to parse.");
+	}
+}

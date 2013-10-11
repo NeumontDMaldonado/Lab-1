@@ -1,0 +1,282 @@
+package chess.networking;
+
+import java.awt.BorderLayout;
+import java.awt.ComponentOrientation;
+import java.awt.Container;
+import java.awt.Dimension;
+import java.awt.FlowLayout;
+import java.awt.Graphics;
+import java.awt.GridLayout;
+import java.awt.Image;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.io.IOException;
+import java.net.InetAddress;
+import java.net.Socket;
+import java.net.UnknownHostException;
+
+import javax.swing.ImageIcon;
+import javax.swing.JButton;
+import javax.swing.JFrame;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.JTextField;
+
+import module1.ChessPiece;
+import module1.ChessPieces;
+
+public class ChessClient extends JFrame {
+	
+	// Initialize variables
+		private Image whiteTile;
+		private Image darkTile;
+		private final int BOARD_SQUARES = 64;
+		private final int BOARD_SIZE = 700;
+		private final int BOARD_LENGTH = 8;    
+		// Initialize components
+		private JPanel boardPanel = new JPanel();
+		private JPanel columnPanel = new JPanel();
+		private JPanel rowPanel = new JPanel();    
+		// Initialize arrays to hold panels and images of the board
+		public JLabel[] jLabels = new JLabel[BOARD_SQUARES];
+		private ImagePanel[] imgPanels = new ImagePanel[BOARD_SQUARES];
+		
+		//nothing
+		public ChessClient() {
+			
+		}
+		
+		// Constructor to set up the chess board.
+		public ChessClient(Image whiteBlock, Image darkBlock) {
+			this.whiteTile = whiteBlock;
+			this.darkTile = darkBlock;
+
+			createAndShowGUI();
+		}
+		
+		
+		
+		public static void main(String[] args) {
+//			try {
+//				InetAddress addr = InetAddress.getByName("10.10.16.78");
+//				System.out.println(addr.getAddress());
+//			} catch (UnknownHostException e) {
+//				// TODO Auto-generated catch block
+//				e.printStackTrace();
+//			}
+			ChessConnectionWindow connectWindow = new ChessConnectionWindow();
+			connectWindow.createComponents();
+		}
+
+		/**
+		 *  Creates the board GUI
+		 */
+		private void createAndShowGUI() {
+			setTitle("Chess board - Tyler Howes");
+			
+			setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+
+			addComponentsToPanel(getContentPane());
+
+			setSize(BOARD_SIZE, BOARD_SIZE);
+			setLocationRelativeTo(null);
+			setResizable(false);
+			setVisible(true);
+		}
+
+		/**
+		 * Adds all the necessary components to the content pane of the JFrame.
+		 */
+		private void addComponentsToPanel(Container contentPanel) {
+
+			GridLayout boardLayout = new GridLayout(BOARD_LENGTH, BOARD_LENGTH);
+			boardPanel.setLayout(boardLayout);
+
+			// Call method to add labels to south (column) panel
+			addLabelsToColumnPanel();
+			// Call method to add panels to west (row) panel
+			addLabelsToRowPanel();
+			// Call method to add panels and labels to the center panel which holds the board
+			addPanelsAndLabels();
+			// Add all panels to frame
+			contentPanel.add(boardPanel, BorderLayout.CENTER);
+			contentPanel.add(columnPanel, BorderLayout.SOUTH);
+			contentPanel.add(rowPanel, BorderLayout.WEST);
+		}
+
+		// Adds column labels to the column panel at bottom of board
+		private void addLabelsToColumnPanel() {
+			GridLayout gridLayout = new GridLayout(0, BOARD_LENGTH);
+
+			columnPanel.setLayout(gridLayout);
+			JLabel[] cLabels = new JLabel[BOARD_LENGTH];
+			String[] label = {"A", "B", "C", "D", "E", "F", "G", "H"};
+
+			for (int i = 0; i < cLabels.length; i++) {
+				cLabels[i] = new JLabel(label[i] + "");
+				columnPanel.add(cLabels[i]);
+			}
+		}
+
+		// Adds the # labels to the row panel off the side of the board.
+		private void addLabelsToRowPanel() {
+			GridLayout gridLayout = new GridLayout(BOARD_LENGTH, 0);
+
+			rowPanel.setLayout(gridLayout);
+			JLabel[] rLables = new JLabel[BOARD_LENGTH];
+			int[] num = {8, 7, 6, 5, 4, 3, 2, 1};
+
+			for (int i = 0; i < rLables.length; i++) {
+				rLables[i] = new JLabel(num[i] + "");
+				rowPanel.add(rLables[i]);
+			}
+		}
+
+		private void addPanelsAndLabels() {
+			// Creates panels with background images and appropriate names
+			addPanelsAndImages();
+
+			for (int i = 0; i < imgPanels.length; i++) {
+				jLabels[i] = new JLabel();
+
+				//used to know the position of the label on the board
+				jLabels[i].setName(imgPanels[i].getName());
+
+				imgPanels[i].add(jLabels[i]);
+
+				//adds panels created in addPanelsAndImages()
+				boardPanel.add(imgPanels[i]);
+			}
+		}
+
+		// Create panels with background images of chess board and set its name according to 1-8 for rows and A-H for columns
+		private void addPanelsAndImages() {
+			int count = 0;
+			String[] label = {"a", "b", "c", "d", "e", "f", "g", "h"};
+			int[] num = {8, 7, 6, 5, 4, 3, 2, 1};
+
+			// Draws the 64 panels in alternating colors
+			for (int row = 0; row < BOARD_LENGTH; row++) {
+				for (int col = 0; col < BOARD_LENGTH; col++) {
+					// even numbers get white pieces
+					if ((col + row) % 2 == 0) {		
+						imgPanels[count] = new ImagePanel(whiteTile);
+					}
+					// odd numbers get black pieces
+					else {						
+						imgPanels[count] = new ImagePanel(darkTile);
+					}
+
+					imgPanels[count++].setName(label[col] + num[row]);
+				}
+			}
+		}
+
+		/**
+		 * Sets image of a label at a certain position on the board according to the block name i.e D4 
+		 * @param img - the image of the piece.
+		 * @param pieceLoc - the location of the block or tile on the board.
+		 */
+		public void drawPieceIcon(ImageIcon img, String pieceLoc) {
+			for (int s = 0; s < jLabels.length; s++) {
+				if (jLabels[s].getName().equalsIgnoreCase(pieceLoc)) {
+					jLabels[s].setIcon(img);
+				}
+			}
+		}
+
+		public void removePieceIcon(String pieceLoc) {
+			for (int s = 0; s < jLabels.length; s++) {
+				if (jLabels[s].getName().equalsIgnoreCase(pieceLoc)) {
+					jLabels[s].setIcon(null);
+				}
+			}
+		}
+
+		public void movePiece(String startLoc, String endLoc, ChessPieces container) {    	    	
+			for(int i = 0; i < container.getLength(); i++) {
+				ChessPiece currentPiece = container.getPiece(i);
+
+				if (currentPiece.getLocation().equals(startLoc)) {
+
+					if(!isPieceAtLoc(endLoc, container)) {
+						removePieceIcon(startLoc);
+						currentPiece.setLocation(endLoc);
+						drawPieceIcon(currentPiece.getImageIcon(), currentPiece.getLocation());
+						System.out.println("The Piece at " + startLoc + " was moved to " + endLoc);
+					}
+
+					if(isPieceAtLoc(endLoc, container) && isPieceAtEndLocIsOpColor(currentPiece, container, endLoc)) {
+						removePieceIcon(startLoc);
+						removePieceIcon(endLoc);
+						container.overWritePieceInContainer(container, endLoc, currentPiece);
+						currentPiece.setLocation(endLoc);
+						drawPieceIcon(currentPiece.getImageIcon(), currentPiece.getLocation());	
+						System.out.print("The Piece at " + startLoc + " was moved to " + endLoc);
+						System.err.println(" and captured the piece there.");
+					}
+
+				}
+			}
+
+		}
+
+		public boolean isPieceAtEndLocIsOpColor(ChessPiece piece, ChessPieces container, String endLoc) {
+			boolean pieceAtEndLocIsOpColor = false;
+
+			for(int i = 0; i < container.getLength(); i++) {
+				if (container.getPiece(i).getLocation().equals(endLoc) && container.getPiece(i).getColor() != piece.getColor())
+					pieceAtEndLocIsOpColor = true;
+			}
+
+			return pieceAtEndLocIsOpColor;
+		}
+
+
+		public boolean isPieceAtLoc(String endLoc, ChessPieces container) {
+			boolean isAtLoc = false;
+
+			for(int j = 0; j < container.getLength(); j++) {
+				ChessPiece currentPiece = container.getPiece(j);
+
+				if (currentPiece.getLocation().equals(endLoc))
+					isAtLoc = true;
+			}    	
+			return isAtLoc;
+		}
+		
+		public int getBOARD_SQUARES() {
+			return BOARD_SQUARES;
+		}
+
+
+		public int getBOARD_SIZE() {
+			return BOARD_SIZE;
+		}
+
+
+		public int getBOARD_LENGTH() {
+			return BOARD_LENGTH;
+		}
+
+
+		// Nested class used to set the background of frame contentPanel
+		class ImagePanel extends JPanel {
+
+			private Image image;
+
+			/**
+			 * Default constructor used to set the image for the background for the
+			 * instance
+			 */
+			public ImagePanel(Image img) {
+				image = img;
+			}
+
+			@Override
+			protected void paintComponent(Graphics g) {
+				//draws image to background to scale of frame
+				g.drawImage(image, 0, 0, null);
+			}
+		}
+}

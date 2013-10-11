@@ -1,0 +1,24 @@
+p1l a4
+p8d h5
+r1l a3
+r2d h7
+p4l d3
+p2d b5
+k1l d2
+n1d c6
+p2l d4
+b1d a6
+p7l g4
+k1d b1 r1
+p7l g5
+p6d f5
+p7l f6*
+r1d d8
+p7l e7*
+k1d b7
+p7l d8*
+k1d b8
+n1d e5
+b2l g2
+n2d f6
+k1d b6

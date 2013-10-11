@@ -1,0 +1,213 @@
+package module3;
+
+import java.io.BufferedReader;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.IOException;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+import module2.PaintBoardPanel;
+
+public class InformationParsing
+{
+	private PaintBoardPanel panel;
+	static final String PIECEMOVEMENT = "([a-z])([1-8])([ld])[ ]([a-h])([1-8])(\\*?)[ ]?[r]?([1-2])?";
+	public String line = null;
+	private int sleep = 500;
+	private static int counter = 0;;
+	private static String color = "l";
+	//private PawnMovement pawn;
+	/**
+	 * @param args
+	 * @param panel
+	 */
+	public InformationParsing(String args, PaintBoardPanel panel)
+	{
+		FileReader chessFile = null;
+		try 
+		{
+			chessFile = new FileReader(args);
+		} 
+		catch (FileNotFoundException e) 
+		{
+			System.err.println("No file found");
+		}
+		BufferedReader buff = new BufferedReader(chessFile);
+		this.panel = panel;
+		read(buff);
+	}
+
+	/**
+	 * @return the color
+	 */
+	public static String getColor() {
+		return color;
+	}
+
+	/**
+	 * @param color the color to set
+	 */
+	public static void setColor(String color) 
+	{
+		InformationParsing.color = color;
+	}
+
+	/**
+	 * @return the counter
+	 */
+	public static int getCounter() {
+		return counter;
+	}
+
+	/**
+	 * @param counter the counter to set
+	 */
+	public void setCounter(int counter) {
+		this.counter = counter;
+	}
+
+	/**
+	 * @param buff
+	 * reads the file and feeds the line to the right method to check if it the piece is moving in a valid manner
+	 * the line is parsed so that the line's info is given to the methods is parsed
+	 */
+	public void read(BufferedReader buff) 
+	{
+		try
+		{
+			while(buff.ready())
+			{
+				line = buff.readLine();
+				Pattern pieceMovement = Pattern.compile(PIECEMOVEMENT);
+				Matcher movement = pieceMovement.matcher(line);
+				
+						
+				
+//				String pieceNr = getColor();  // movement.group(2); //TODO fix movement
+//				String pieceColor = movement.group(3);
+//				String newXLocation = movement.group(4);
+//				String newYLocation = movement.group(5);
+//				String capture = movement.group(6);
+				if(movement.find())
+				{	
+					String pieceNr = movement.group(2);
+					String pieceColor = movement.group(3);
+					String newXLocation = movement.group(4);
+					String newYLocation = movement.group(5);
+					String capture = movement.group(6);
+					String secondPieceNr = movement.group(7);
+					if(getColor().equals(pieceColor))
+					{
+						if(movement.group(1).equals("p"))
+						{
+							if(capture.equals("*"))
+							{
+								counter++;
+							}
+							PawnMovement move = new PawnMovement(pieceNr,pieceColor,newXLocation,newYLocation,capture, panel.pawnPlacer, panel.queenPlacer, panel.rookPlacer);
+							move.checkPawnMove();
+							move.checkFinalRow();
+							panel.repaint();
+							try 
+							{
+								Thread.sleep(sleep);
+							} 
+							catch (InterruptedException e) 
+							{
+								e.printStackTrace();
+							}
+						}
+						else if(movement.group(1).equals("r"))
+						{
+							RookMovement move = new RookMovement(pieceNr,pieceColor,newXLocation,newYLocation,capture, panel.rookPlacer);
+							move.checkRookMove();
+							panel.repaint();
+							try 
+							{
+								Thread.sleep(sleep);
+							} 
+							catch (InterruptedException e) 
+							{
+								e.printStackTrace();
+							}
+						}
+						else if(movement.group(1).equals("k"))
+						{
+							KingMovement move = new KingMovement(pieceNr,pieceColor,newXLocation,newYLocation,capture, panel.kingPlacer, secondPieceNr, panel.rookPlacer);
+							move.checkKingMovement();
+							panel.repaint();
+							try 
+							{
+								Thread.sleep(sleep);
+							} 
+							catch (InterruptedException e) 
+							{
+								e.printStackTrace();
+							}
+						}
+						else if(movement.group(1).equals("n"))
+						{
+							KnightMovement move = new KnightMovement(pieceNr,pieceColor,newXLocation,newYLocation,capture, panel.knightPlacer);
+							move.checkKnightMovement();
+							panel.repaint();
+							try 
+							{
+								Thread.sleep(sleep);
+							} 
+							catch (InterruptedException e) 
+							{
+								e.printStackTrace();
+							}
+						}
+						else if(movement.group(1).equals("b"))
+						{
+							BishopMovement move = new BishopMovement(pieceNr,pieceColor,newXLocation,newYLocation,capture, panel.bishopPlacer);
+							move.checkBishopMove();
+							panel.repaint();
+							try 
+							{
+								Thread.sleep(sleep);
+							} 
+							catch (InterruptedException e) 
+							{
+								e.printStackTrace();
+							}
+						}
+						else if(movement.group(1).equals("q"))
+						{
+							QueenMovement move = new QueenMovement(pieceNr,pieceColor,newXLocation,newYLocation,capture, panel.queenPlacer);
+							move.checkRookMove();
+							panel.repaint();
+							try 
+							{
+								Thread.sleep(sleep);
+							} 
+							catch (InterruptedException e) 
+							{
+								e.printStackTrace();
+							}
+						}
+					}
+					else
+					{
+						System.err.println("Invalid move");
+					}
+				}
+			}
+		}
+		catch (IOException e)
+		{
+			System.err.println("IO exception happened");
+		}
+	}
+
+	/**
+	 * signals the end of the file
+	 */
+	public void end()
+	{
+		System.out.println("There is no more information to parse");
+	}
+
+}

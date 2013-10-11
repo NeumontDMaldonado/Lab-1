@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<session version="1.0">
+<refactoring comment="Copy element &apos;Startup.java&apos; to &apos;Maldonado.Danny_Lab#3/src/lab3&apos;&#x0D;&#x0A;- Original project: &apos;Maldonado.Danny_io-dmaldonado&apos;&#x0D;&#x0A;- Destination element: &apos;Maldonado.Danny_Lab#3/src/lab3&apos;&#x0D;&#x0A;- Original element: &apos;maldonado.Danny_JavaLab2.Startup.java&apos;" description="Copy compilation unit" destination="=Maldonado.Danny_Lab\#3/src&lt;lab3" element1="/src&lt;maldonado.Danny_JavaLab2{Startup.java" files="0" flags="589830" folders="0" id="org.eclipse.jdt.ui.copy" policy="org.eclipse.jdt.ui.copyResources" stamp="1368763936414" units="1" version="1.0"/>
+</session>

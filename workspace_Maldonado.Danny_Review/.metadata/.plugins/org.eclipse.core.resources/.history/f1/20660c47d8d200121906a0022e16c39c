@@ -1,0 +1,24 @@
+/**
+ * 
+ */
+package module1;
+
+import java.util.ArrayList;
+
+import javax.swing.ImageIcon;
+
+/**
+ * @author dmaldonado
+ *
+ */
+public class Queen extends ChessPiece
+{
+
+	public Queen(String name, String color, String pieceLoc,
+			ImageIcon pieceIcon, ArrayList<String> moves) 
+	{
+		super(name, color, pieceLoc, pieceIcon, moves);
+		// TODO Auto-generated constructor stub
+	}
+
+}

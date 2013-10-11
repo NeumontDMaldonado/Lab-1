@@ -1,0 +1,110 @@
+/**
+ * 
+ */
+package module3;
+
+import java.awt.Graphics;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+import javax.swing.JPanel;
+
+import module2.BlackPawnPlacer;
+import module2.PawnPlacer;
+import module2.PawnPlacer.Pawn;
+import module2.PossibleSpaces;
+
+/**
+ * @author dmaldonado
+ *
+ */
+public class BlackPawnMovementCheck extends JPanel
+{
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 1L;
+
+	int pawnCounter1 = 0;
+	int pawnCounter2 = 0;
+	int pawnCounter3 = 0;
+	int pawnCounter4 = 0;
+	int pawnCounter5 = 0;
+	int pawnCounter6 = 0;
+	int pawnCounter7 = 0;
+	int pawnCounter8 = 0;
+	String line;
+	//Pawn p1, p2, p3, p4, p5, p6, p7, p8;
+	BlackPawnPlacer place = new BlackPawnPlacer();
+	PossibleSpaces space = new PossibleSpaces();
+
+	public BlackPawnMovementCheck(String line)
+	{
+		this.line = line;
+		checkPawnMove();
+	}
+
+	@SuppressWarnings("static-access")
+	public void checkPawnMove()
+	{
+		final String PIECEMOVE = "\\b([a-z][1-8])[ld][ ]([a-h])([1-8])(\\*?)";
+		Pattern pieceMove = Pattern.compile(PIECEMOVE);
+		Matcher move = pieceMove.matcher(line);
+		if(move.find())
+		{
+			System.out.println(move.group(3).charAt(0));
+			System.out.println(place.p1.y);
+			if(pawnCounter1 > 1 || pawnCounter2 > 1 || pawnCounter3 > 1 || pawnCounter4 > 1 || 
+					pawnCounter5 > 1 || pawnCounter6 > 1 || pawnCounter7 > 1 || pawnCounter8 > 1)
+			{
+				System.err.println("Invalid move");
+			}
+			else if(move.group(3).charAt(0) - place.p1.y == 1) //problem here
+			{
+				System.out.println("norma");
+				if(move.group(1).equals("p1"))
+				{
+					System.out.println(move.group(1));
+					switch(move.group(3))
+					{
+					case "6": place.p1.y = space.getSix();
+					break;
+					case "5": place.p1.y = space.getFive();
+					break;
+					case "4": place.p1.y = space.getFour();
+					break;
+					case "3": place.p1.y = space.getThree();
+					break;
+					case "2": place.p1.y = space.getTwo();
+					break;
+					case "1": place.p1.y = space.getOne();
+					break;
+					}
+					pawnCounter1++;
+				}
+				
+				if(move.group(1).equals("p2"))
+				{
+					System.out.println("working");
+					switch(move.group(3))
+					{
+					case "6": place.p2.y = space.getSix();
+					break;
+					case "5": place.p2.y = space.getFive();
+					break;
+					case "4": place.p2.y = space.getFour();
+					break;
+					case "3": place.p2.y = space.getThree();
+					break;
+					case "2": place.p2.y = space.getTwo();
+					break;
+					case "1": place.p2.y = space.getOne();
+					break;
+					}
+					pawnCounter2++;
+				}
+
+			}
+		}
+	}
+}

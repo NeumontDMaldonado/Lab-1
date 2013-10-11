@@ -1,0 +1,58 @@
+/**
+ * 
+ */
+package module1;
+
+import java.io.BufferedReader;
+import java.io.FileReader;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+/**
+ * @author dmaldonado
+ *
+ */
+public class Startup {
+
+	/**
+	 * @param args
+	 * @throws Exception 
+	 */
+	public static void main(String[] args) throws Exception 
+	{
+		FileReader file = new FileReader("checkmate.txt");
+		BufferedReader buff = new BufferedReader(file);
+		
+		int counter = 1;
+		String line = "";
+		while(buff.ready())
+		{
+			line = buff.readLine();
+			Pattern pattern1 = Pattern.compile("[a-z][l]?[d]?[a-h][1-8]");
+			Pattern pattern2 = Pattern.compile("[a-h][1-8][ ][a-h][1-8][*]?");
+			Pattern pattern3 = Pattern.compile("[a-h1-8]{2}[ ][a-h1-8]{2}[ ][a-h1-8]{2}[ ][a-h1-8]{2}");
+			Matcher matcher1 = pattern1.matcher(line);
+			Matcher matcher2 = pattern2.matcher(line);
+			Matcher matcher3 = pattern3.matcher(line);
+			
+			if(matcher1.find())
+			{
+				System.out.println("The move is a placement move");//what piece being placed and where
+			}
+			if(matcher2.find())
+			{
+				System.out.println("Moving one piece from one location to another.");
+			}
+			if(matcher3.find())
+			{
+				System.out.println("Moving two pieces.");
+			}
+			else
+			{
+				System.out.println("Line "+counter+ " of the file is not a valid move " + line);
+			}
+				counter++;
+		}
+		buff.close();
+	}
+}

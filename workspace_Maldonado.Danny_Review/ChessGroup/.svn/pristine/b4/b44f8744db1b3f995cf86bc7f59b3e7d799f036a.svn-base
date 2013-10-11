@@ -1,0 +1,35 @@
+package christian.chess.pieces;
+import java.util.ArrayList;
+
+import christian.chess.tile.Tile;
+
+public class Pawn extends Piece
+{
+	public Pawn(String s, String c)
+	{
+		super(s, c);
+	}
+	
+//	public ArrayList<String> checkForAvailableMoves(Tile[][] b, int startCol, int startRow)
+//	{
+//		ArrayList<String> moveList = new ArrayList<>();
+//		
+//		for(int i = 0; i < 8; i++)
+//		{
+//			for(int j = 0; j < 8; j++)
+//			{
+//				if(validateMove(b, startCol, startRow, i, j))
+//				{
+//					moveList.add(i + ", " + j);
+//				}
+//			}
+//		}
+//		return moveList;
+//	}
+	
+	public boolean validateMove(int startCol, int startRow, int endCol, int endRow)
+	{
+		//Return true if move is valid, false if it isn't
+		return true;
+	}
+}

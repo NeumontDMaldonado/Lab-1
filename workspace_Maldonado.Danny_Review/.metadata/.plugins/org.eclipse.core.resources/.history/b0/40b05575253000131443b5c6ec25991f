@@ -1,0 +1,9 @@
+package secondDay;
+
+public class Tree extends Plant
+{
+	public void print()
+	{
+		System.out.println(getLeaves());
+	}
+}

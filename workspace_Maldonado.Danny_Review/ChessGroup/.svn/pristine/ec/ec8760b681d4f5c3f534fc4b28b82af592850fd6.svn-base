@@ -1,0 +1,35 @@
+ package module1;
+
+import java.io.BufferedReader;
+import java.io.FileNotFoundException;
+import java.io.FileReader;
+import java.io.IOException;
+import module2.ChessBoard;
+
+public class ChessDriver {
+	
+	private static BufferedReader reader;
+	private static ChessIO IO = new ChessIO();
+	private static ChessBoard board;	
+	
+	/**
+	 * The main method, that when executed, will call the method in ChessIO that will determine if the file is valid.
+	 * It will also determine whether each line read in is a starting place command, a moving command, or a castling move. 
+	 * The file is read in through the argument in the command line and stored as a String.
+	 * The board is then created and passed into the method to place pieces or move them.
+	 * @param args - the arguments being read in from the command line (the filename).
+	 * @throws IOException
+	 */
+	public static void main(String[] args) {
+		try {
+			reader = new BufferedReader(new FileReader(IO.getFileName(args[0])));
+		} catch (FileNotFoundException e) {
+			e.printStackTrace();
+		}		
+		
+		board = IO.createBoard(board);
+		
+		IO.determineCommand(reader, board);
+		
+	}
+}
